@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cafe Curator</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕️</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Savate:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <style>
+    body {
+      background-color: #f5f5dc; /* A soft beige background */
+      font-family: "Savate", sans-serif;
+      text-align: center;
+      padding: 1rem;
+      color: #333;
+    }
+
+    h1 {
+      font-size: 3rem;
+      color: #5a7247; /* A muted green for the title */
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      font-size: 1.2rem;
+      color: #666;
+      margin-bottom: 2rem;
+    }
+
+    button {
+      font-family: "Savate", sans-serif;
+      font-size: 1.2rem;
+      background-color: #4b603f; /* A darker, more appealing green */
+      color: white;
+      border-radius: 25px;
+      padding: 12px 25px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      margin: 0.5rem;
+      outline: none;
+    }
+
+    button:hover {
+      background-color: #5a7247;
+      transform: translateY(-2px);
+    }
+
+    .cards {
+      position: relative;
+      width: 100%;
+      max-width: 350px;
+      margin: 2rem auto;
+      height: 450px;
+    }
+
+    .swipe-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      -webkit-user-drag: none;
+      user-select: none;
+    }
+
+    .location-card {
+      width: 100%;
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      text-align: left;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .location-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .location-card h2 {
+      font-size: 1.5rem;
+      margin: 0.5rem 0;
+      color: #333;
+    }
+
+    .location-card p {
+      font-size: 1rem;
+      color: #666;
+      margin: 0.2rem 0;
+    }
+
+    .saved-cafes {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>☕️ Cafe Curator 🍵</h1>
+  <p>Find and save the best cafes near you.</p>
+
+  <div>
+    <button onclick="getLocation()">Find Cafes Near Me</button>
+    <button onclick="showSaved()">Show Saved Cafes</button>
+  </div>
+
+  <div class="cards"></div>
+  <div class="saved-cafes"></div>
+
+  <script>
+    const cardsContainer = document.querySelector('.cards');
+    const savedCafesContainer = document.querySelector('.saved-cafes');
+    let cafes = [];
+    let savedCafes = JSON.parse(localStorage.getItem('savedCafes')) || [];
+    let currentIndex = 0;
+
+    // Placeholder cafe data
+    const placeholderCafes = [
+        { name: 'The Daily Grind', vicinity: '123 Coffee Lane', photoUrl: 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80' },
+        { name: 'Aroma Mocha', vicinity: '456 Brew Street', photoUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80' },
+        { name: 'The Cozy Corner', vicinity: '789 Latte Avenue', photoUrl: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=871&q=80' },
+        { name: 'Espresso Yourself', vicinity: '101 Roast Road', photoUrl: 'https://images.unsplash.com/photo-1511920183353-3c7c95a55e2c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80' }
+    ];
+
+    function getLocation() {
+        // In a real application, you would use navigator.geolocation to get the user's location
+        // and then fetch data from an API like Google Places.
+        // For this example, we'll use our placeholder data.
+        cafes = placeholderCafes;
+        currentIndex = 0;
+        savedCafesContainer.innerHTML = ''; // Clear saved cafes view
+        displayNextCard();
+    }
+
+    function createCard(cafe) {
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('swipe-wrapper');
+
+        const card = document.createElement('div');
+        card.classList.add('location-card');
+        card.innerHTML = `
+            <img src="${cafe.photoUrl}" alt="${cafe.name}">
+            <h2>${cafe.name}</h2>
+            <p>${cafe.vicinity}</p>
+        `;
+        wrapper.appendChild(card);
+        cardsContainer.appendChild(wrapper);
+
+        const hammer = new Hammer(wrapper);
+
+        hammer.on('pan', (event) => {
+            wrapper.style.transition = 'none';
+            wrapper.style.transform = `translate(${event.deltaX}px, ${event.deltaY}px) rotate(${event.deltaX / 10}deg)`;
+        });
+
+        hammer.on('panend', (event) => {
+            wrapper.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+            if (event.deltaX > 100) { // Swipe right to save
+                saveCafe(cafe);
+                wrapper.style.transform = `translateX(500px) rotate(30deg)`;
+                wrapper.style.opacity = '0';
+                setTimeout(() => {
+                    wrapper.remove();
+                    displayNextCard();
+                }, 300);
+            } else if (event.deltaX < -100) { // Swipe left to dismiss
+                wrapper.style.transform = `translateX(-500px) rotate(-30deg)`;
+                wrapper.style.opacity = '0';
+                setTimeout(() => {
+                    wrapper.remove();
+                    displayNextCard();
+                }, 300);
+            } else {
+                wrapper.style.transform = '';
+            }
+        });
+    }
+
+    function displayNextCard() {
+        if (currentIndex < cafes.length) {
+            createCard(cafes[currentIndex]);
+            currentIndex++;
+        } else if (cardsContainer.children.length === 0) {
+            cardsContainer.innerHTML = '<p>No more cafes to show. Try a new search!</p>';
+        }
+    }
+
+    function saveCafe(cafe) {
+        if (!savedCafes.some(saved => saved.name === cafe.name)) {
+            savedCafes.push(cafe);
+            localStorage.setItem('savedCafes', JSON.stringify(savedCafes));
+        }
+    }
+
+    function showSaved() {
+        cardsContainer.innerHTML = '';
+        savedCafesContainer.innerHTML = '';
+        if (savedCafes.length === 0) {
+            savedCafesContainer.innerHTML = '<p>You have no saved cafes yet. Swipe right on a cafe to save it!</p>';
+            return;
+        }
+        savedCafes.forEach(cafe => {
+            const card = document.createElement('div');
+            card.classList.add('location-card');
+            card.innerHTML = `
+                <img src="${cafe.photoUrl}" alt="${cafe.name}">
+                <h2>${cafe.name}</h2>
+                <p>${cafe.vicinity}</p>
+            `;
+            savedCafesContainer.appendChild(card);
+        });
+    }
+
+  </script>
+</body>
+</html>
